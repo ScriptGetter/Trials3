@@ -1,0 +1,252 @@
+local OrionLib = loadstring(game:HttpGet(('https://raw.githubusercontent.com/shlexware/Orion/main/source')))()
+
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+
+if not LocalPlayer or not LocalPlayer.Character then
+    LocalPlayer.CharacterAdded:Wait()
+end
+
+local Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+local HumanoidRootPart = Character:WaitForChild("HumanoidRootPart")
+
+local RunService = game:GetService("RunService")
+
+local debounce = false
+local function onChatted(message)
+    if debounce then return end
+    debounce = true
+    local normalizedMessage = message:lower():gsub("%s+", "")
+    if string.find(normalizedMessage, "dynamic") then
+        keypress(0xA3)
+    end
+    task.wait(1)
+    debounce = false
+end
+LocalPlayer.Chatted:Connect(onChatted)
+
+for i, v in pairs(game.Workspace:GetDescendants()) do
+    if v:IsA("ProximityPrompt") then
+        v.HoldDuration = 0
+    end
+end
+
+local function isPlayerAlive()
+    return Character and Character:FindFirstChild("Humanoid") and Character.Humanoid.Health > 0
+end
+LocalPlayer.CharacterAdded:Connect(function(newCharacter)
+    Character = newCharacter
+    HumanoidRootPart = Character:WaitForChild("HumanoidRootPart")
+end)
+local function executeIfAlive(callback)
+    if isPlayerAlive() then
+        callback()
+    else
+        warn("Player is not alive.")
+    end
+end
+
+--[[local isMovementEnabled = _G.SpeedToggle
+local desiredSpeed = _G.SpeedValue
+local function getMovementDirection()
+    return Character.Humanoid.MoveDirection
+end
+local function resolveCollisions(currentPosition, nextPosition, moveDirection)
+    local halfSize = Vector3.new(1, 2, 1)
+    local regionStart = nextPosition - halfSize
+    local regionEnd = nextPosition + halfSize
+    local region = Region3.new(regionStart, regionEnd)
+    local parts = workspace:FindPartsInRegion3WithIgnoreList(region, {Character}, 10)
+    for _, part in ipairs(parts) do
+        local partPosition = part.Position
+        local directionToPart = (partPosition - currentPosition).Unit
+        local alignment = directionToPart:Dot(moveDirection.Unit)
+        if alignment > 0.5 then
+            return currentPosition
+        end
+    end
+    return nextPosition
+end
+local function onRenderStep()
+    if not isMovementEnabled then return end
+    local moveDirection = getMovementDirection()
+    if moveDirection.Magnitude > 0 then
+        local deltaPosition = moveDirection * desiredSpeed * RunService.RenderStepped:Wait()
+        local nextPosition = HumanoidRootPart.Position + deltaPosition
+        local resolvedPosition = resolveCollisions(HumanoidRootPart.Position, nextPosition, moveDirection)
+        HumanoidRootPart.CFrame = CFrame.new(resolvedPosition, resolvedPosition + moveDirection)
+    end
+end
+RunService.RenderStepped:Connect(onRenderStep)]]
+
+local Window = OrionLib:MakeWindow({Name = "Ultra Hub | EnchantedV4000", HidePremium = false, SaveConfig = true, ConfigFolder = "OrionTest"})
+
+local Tab = Window:MakeTab({
+	Name = "🏠Home",
+	Icon = "rbxassetid://4483345998",
+	PremiumOnly = false
+})
+
+Tab:AddButton({
+	Name = "Make Potion",
+	Callback = function()
+      		local function interactWithItem(part, prompt, HumanoidRootPart)
+            if part and prompt then
+                HumanoidRootPart.CFrame = part.CFrame
+                task.wait(0.18)
+                fireproximityprompt(prompt)
+                task.wait(0.38)
+            else
+                warn("BasePart or ProximityPrompt is missing!")
+            end
+        end
+        if Character and HumanoidRootPart then
+            if not isPlayerAlive() then
+                return
+            end
+            local ingredients = {
+                workspace.MainObjective.Ingredients.Bats,
+                workspace.MainObjective.Ingredients.Snakes,
+                workspace.MainObjective.Ingredients.Roses,
+                workspace.MainObjective.Ingredients.Eyes
+            }
+            local cauldron = workspace.MainObjective.Cauldron.Main
+            for _, ingredientModel in ipairs(ingredients) do
+                if ingredientModel then
+                    for _, child in ipairs(ingredientModel:GetChildren()) do
+                        if child:IsA("BasePart") then
+                            child.CanCollide = false
+                            local proximityPrompt = child:FindFirstChild("ProximityPrompt")
+                            interactWithItem(child, proximityPrompt, HumanoidRootPart)
+                        elseif child:IsA("Model") then
+                            local basePart, proximityPrompt = nil, nil
+                            for _, descendant in ipairs(child:GetDescendants()) do
+                                if descendant:IsA("BasePart") then
+                                    basePart = descendant
+                                elseif descendant:IsA("ProximityPrompt") then
+                                    proximityPrompt = descendant
+                                end
+                                if basePart and proximityPrompt then
+                                    break
+                                end
+                            end
+                            if basePart and proximityPrompt then
+                                basePart.CanCollide = false
+                                interactWithItem(basePart, proximityPrompt, HumanoidRootPart)
+                            end
+                        end
+                    end
+                else
+                    warn(ingredientModel.Name .. " is empty or does not exist!")
+                end
+            end
+            if cauldron and cauldron:FindFirstChild("ProximityPrompt") then
+                cauldron.CanCollide = false
+                HumanoidRootPart.CFrame = cauldron.CFrame
+                task.wait(0.18)
+                fireproximityprompt(cauldron.ProximityPrompt)
+                task.wait(0.38)
+            else
+                warn("Cauldron or its ProximityPrompt is missing!")
+            end
+        end
+    end
+})
+
+Tab:AddButton({
+	Name = "Collect All Candy",
+	Callback = function()
+      		executeIfAlive(function()
+            local function interactWithItem(item, HumanoidRootPart)
+                if item:IsA("MeshPart") and item:FindFirstChild("ProximityPrompt") then
+                    HumanoidRootPart.CFrame = item.CFrame
+                    task.wait(0.18)
+                    fireproximityprompt(item.ProximityPrompt)
+                    task.wait(0.38)
+                end
+            end
+            local candyModel = workspace.Candy
+            if candyModel and candyModel:FindFirstChild("Candy") then
+                HumanoidRootPart.CFrame = candyModel.Candy.CFrame
+                task.wait(0.18)
+                fireproximityprompt(candyModel.Candy.ProximityPrompt)
+                task.wait(0.38)
+            elseif not candyModel:FindFirstChild("Candy") then
+            end
+            if candyModel and candyModel:GetChildren() then
+                local candyChildren = candyModel:GetChildren()
+                for i, child in ipairs(candyChildren) do
+                    if child:IsA("MeshPart") then
+                        child.CanCollide = false
+                        interactWithItem(child, HumanoidRootPart)
+                    end
+                end
+            end
+            HumanoidRootPart.CFrame = CFrame.new(107.056656, 37.057106, 246.335251, 0.903638005, 2.76608443e-08, 0.428297102, -2.91318275e-10, 1, -6.39686775e-08, -0.428297102, 5.76797525e-08, 0.903638005)
+        end)
+    end
+})
+
+local Tab = Window:MakeTab({
+	Name = "Visual",
+	Icon = "rbxassetid://4483345998",
+	PremiumOnly = false
+})
+
+Tab:AddButton({
+	Name = "Fullbright",
+	Callback = function()
+local Lighting = game:GetService("Lighting")
+        if not Lighting then return end
+        if value then
+            if not _G.NormalLightingSettings then
+                _G.NormalLightingSettings = {
+                    Brightness = Lighting.Brightness,
+                    ClockTime = Lighting.ClockTime,
+                    FogEnd = Lighting.FogEnd,
+                    GlobalShadows = Lighting.GlobalShadows,
+                    Ambient = Lighting.Ambient
+                }
+            end
+            Lighting.Brightness = 2
+            Lighting.ClockTime = 12
+            Lighting.FogEnd = 1000000
+            Lighting.GlobalShadows = false
+            Lighting.Ambient = Color3.fromRGB(255, 255, 255)
+        else
+            if _G.NormalLightingSettings then
+                Lighting.Brightness = _G.NormalLightingSettings.Brightness
+                Lighting.ClockTime = _G.NormalLightingSettings.ClockTime
+                Lighting.FogEnd = _G.NormalLightingSettings.FogEnd
+                Lighting.GlobalShadows = _G.NormalLightingSettings.GlobalShadows
+                Lighting.Ambient = _G.NormalLightingSettings.Ambient
+            end
+        end
+    end
+})
+
+local Tab = Window:MakeTab({
+	Name = "🗣️ Credits",
+	Icon = "rbxassetid://4483345998",
+	PremiumOnly = false
+})
+
+Tab:AddButton({
+	Name = "Made By EnchantedV4000",
+	Callback = function()
+      		print("button pressed")
+  	end    
+})
+
+Tab:AddButton({
+	Name = "Join Discord!",
+	Callback = function()
+local copy = “https://discord.gg/4B4DQP2RKE”
+
+script.parent.MouseButton1Click:Connect(function(plr)
+
+setclipboard(tostring(copy))
+
+end)
+  	end    
+})
